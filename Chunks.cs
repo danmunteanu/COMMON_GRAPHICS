@@ -9,8 +9,14 @@ namespace CommonGraphics
     {
         private static int _columns = 3;
 
-        public static void CreateRenderChunks(int width, int height, out List<(Point start, Point end)> chunks)
+        public static void CreateRenderChunks(int width, int height, out List<(Point start, Point end)>? chunks)
         {
+            if (width <= 0 || height <= 0)
+            {
+                chunks = null;
+                return;
+            }
+
             int procCount = Environment.ProcessorCount;
 
             // Compute rows based on processors
