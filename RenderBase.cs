@@ -1,7 +1,7 @@
 ﻿
 namespace CommonGraphics
 {
-    public class Renderer
+    public class RenderBase
     {
         public delegate void ProgressCallback(int percent);
         public delegate void ChunkRenderer(Point start, Point end, byte[] pixels, int stride);
@@ -16,6 +16,8 @@ namespace CommonGraphics
         public ProgressCallback? Callback { get; set; } = null;
         public ChunkRenderer? RenderChunk { get; set; } = null;
 
+        private static int _bufferColumns = 3;
+
         public virtual void Render()
         {
             if (Buffer == null)
@@ -26,7 +28,7 @@ namespace CommonGraphics
 
             //  Split render area in multiple chunks
             List<(Point start, Point end)>? chunks = null;
-            Chunks.CreateRenderChunks(Buffer.Width, Buffer.Height, out chunks);
+            CreateRenderAreas(Buffer, out chunks);
 
             //  Something went wrong while chunking
             if (chunks == null)
@@ -61,5 +63,48 @@ namespace CommonGraphics
             // 100% progress
             Callback?.Invoke(100);
         }
+
+        public static void CreateRenderAreas(Bitmap buffer, out List<(Point start, Point end)>? renderAreas)
+        {
+            if (buffer == null)
+            {
+                renderAreas = null;
+                return;
+            }
+
+            int procCount = Environment.ProcessorCount;
+
+            // Compute rows based on processors
+            int rows = (int)Math.Ceiling(procCount / (double)_bufferColumns);
+
+            int cellWidth = buffer.Width / _bufferColumns;
+            int cellHeight = buffer.Height/ rows;
+
+            renderAreas = new();
+
+            //  Create chunks
+            for (int row = 0; row < rows; row++)
+            {
+                for (int col = 0; col < _bufferColumns; col++)
+                {
+                    int x1 = col * cellWidth;
+                    int y1 = row * cellHeight;
+
+                    int x2 = (col == _bufferColumns - 1) ? buffer.Width : (x1 + cellWidth);
+                    int y2 = (row == rows - 1) ? buffer.Height : (y1 + cellHeight);
+
+                    Point start = new Point(x1, y1);
+                    Point end = new Point(x2, y2);
+
+                    renderAreas.Add((start, end));
+
+                    if (renderAreas.Count == procCount)
+                        break; // stop if we've scheduled enough
+                }
+                if (renderAreas.Count == procCount)
+                    break;
+            }
+        }
+
     }
 }
