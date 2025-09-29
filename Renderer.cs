@@ -14,14 +14,14 @@ namespace CommonGraphics
 
         //  Callback for update
         public ProgressCallback? Callback { get; set; } = null;
-        public ChunkRenderer? RenderTask { get; set; } = null;
+        public ChunkRenderer? RenderChunk { get; set; } = null;
 
         public virtual void Render()
         {
             if (Buffer == null)
                 return;
 
-            if (RenderTask == null)
+            if (RenderChunk == null)
                 return;
 
             //  Split render area in multiple chunks
@@ -51,7 +51,7 @@ namespace CommonGraphics
             // Render all chunks in parallel
             Parallel.ForEach(chunks, chunk =>
             {
-                RenderTask(chunk.start, chunk.end, pixels, stride);
+                RenderChunk(chunk.start, chunk.end, pixels, stride);
             });
 
             // Copy back into bitmap
