@@ -28,7 +28,7 @@ namespace CommonGraphics
 
             //  Split render area in multiple chunks
             List<(Point start, Point end)>? chunks = null;
-            CreateRenderAreas(Buffer, out chunks);
+            SplitRenderArea(Buffer, out chunks);
 
             //  Something went wrong while chunking
             if (chunks == null)
@@ -64,7 +64,30 @@ namespace CommonGraphics
             Callback?.Invoke(100);
         }
 
-        public static void CreateRenderAreas(Bitmap buffer, out List<(Point start, Point end)>? renderAreas)
+        /*
+         * Divides the bitmap buffer into rectangular chunks for parallel rendering.
+         *
+         * The image is split into a grid with a fixed number of columns and
+         * as many rows as needed based on the processor count.
+         *
+         * Any leftover pixels (from integer division) are absorbed into the
+         * last chunk in each row and column, ensuring full coverage of the
+         * render area without gaps or overlaps.
+         *
+         * Example layout with _bufferColumns = 3 and procCount = 8:
+         *
+         *  +---------+---------+---------+
+         *  | Chunk 0 | Chunk 1 | Chunk 2 |
+         *  +---------+---------+---------+
+         *  | Chunk 3 | Chunk 4 | Chunk 5 |
+         *  +---------+---------+---------+
+         *  | Chunk 6 | Chunk 7 | Chunk 8 |
+         *  +---------+---------+---------+
+         *
+         * Each chunk is represented by its top-left (start) and
+         * bottom-right (end) coordinates.
+         */
+        public static void SplitRenderArea(Bitmap buffer, out List<(Point start, Point end)>? renderAreas)
         {
             if (buffer == null)
             {
@@ -74,37 +97,35 @@ namespace CommonGraphics
 
             int procCount = Environment.ProcessorCount;
 
-            // Compute rows based on processors
-            int rows = (int)Math.Ceiling(procCount / (double)_bufferColumns);
+            // Compute rows and cols for a near-square tiling
+            int cols = _bufferColumns;
+            int rows = (int)Math.Ceiling(procCount / (double)cols);
 
-            int cellWidth = buffer.Width / _bufferColumns;
-            int cellHeight = buffer.Height/ rows;
+            // Base chunk sizes
+            int baseCellWidth = buffer.Width / cols;
+            int baseCellHeight = buffer.Height / rows;
 
             renderAreas = new();
 
-            //  Create chunks
             for (int row = 0; row < rows; row++)
             {
-                for (int col = 0; col < _bufferColumns; col++)
+                for (int col = 0; col < cols; col++)
                 {
-                    int x1 = col * cellWidth;
-                    int y1 = row * cellHeight;
+                    int x1 = col * baseCellWidth;
+                    int y1 = row * baseCellHeight;
 
-                    int x2 = (col == _bufferColumns - 1) ? buffer.Width : (x1 + cellWidth);
-                    int y2 = (row == rows - 1) ? buffer.Height : (y1 + cellHeight);
+                    // Expand the last chunk in each row/col to absorb leftovers
+                    int x2 = (col == cols - 1) ? buffer.Width : (x1 + baseCellWidth);
+                    int y2 = (row == rows - 1) ? buffer.Height : (y1 + baseCellHeight);
 
                     Point start = new Point(x1, y1);
                     Point end = new Point(x2, y2);
 
                     renderAreas.Add((start, end));
-
-                    if (renderAreas.Count == procCount)
-                        break; // stop if we've scheduled enough
                 }
-                if (renderAreas.Count == procCount)
-                    break;
             }
         }
+
 
     }
 }
