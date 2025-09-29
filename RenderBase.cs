@@ -1,5 +1,4 @@
-﻿
-namespace CommonGraphics
+﻿namespace CommonGraphics
 {
     public class RenderBase
     {
@@ -11,6 +10,8 @@ namespace CommonGraphics
         protected int _plottedPixels = 0;
         protected int _pixelsToPlotCount = 0;
         protected int _lastReportedPercent = 0;
+
+        public TraversalOrder TraversalOrder { get; set; } = TraversalOrder.LeftToRight;
 
         //  Callback for update
         public ProgressCallback? Callback { get; set; } = null;
