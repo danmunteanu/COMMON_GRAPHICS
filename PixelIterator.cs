@@ -1,7 +1,4 @@
-﻿using System;
-using System.Drawing;
-
-namespace CommonGraphics
+﻿namespace CommonGraphics
 {
     public enum TraversalOrder
     {

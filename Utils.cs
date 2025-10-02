@@ -44,10 +44,10 @@
             }
         }
 
-        public static Rectangle TranslateSelectionToImage(PictureBox pictureBox, Rectangle selection)
+        public static Point TranslatePointToImage(PictureBox pictureBox, Point point)
         {
             if (pictureBox.Image == null)
-                return Rectangle.Empty;
+                return Point.Empty;
 
             Image img = pictureBox.Image;
 
@@ -55,43 +55,49 @@
             {
                 case PictureBoxSizeMode.Normal:
                 case PictureBoxSizeMode.AutoSize:
-                    // Image is shown at original size, no scaling
-                    return Rectangle.Intersect(selection, new Rectangle(0, 0, img.Width, img.Height));
+                    // No scaling, just clamp inside image bounds
+                    return new Point(
+                        Math.Max(0, Math.Min(img.Width - 1, point.X)),
+                        Math.Max(0, Math.Min(img.Height - 1, point.Y))
+                    );
 
                 case PictureBoxSizeMode.StretchImage:
                     {
-                        // Image is stretched to PictureBox
+                        // Image stretched to fit PictureBox
                         float scaleX = (float)img.Width / pictureBox.Width;
                         float scaleY = (float)img.Height / pictureBox.Height;
-                        return new Rectangle(
-                            (int)(selection.X * scaleX),
-                            (int)(selection.Y * scaleY),
-                            (int)(selection.Width * scaleX),
-                            (int)(selection.Height * scaleY)
+
+                        int imgX = (int)(point.X * scaleX);
+                        int imgY = (int)(point.Y * scaleY);
+
+                        return new Point(
+                            Math.Max(0, Math.Min(img.Width - 1, imgX)),
+                            Math.Max(0, Math.Min(img.Height - 1, imgY))
                         );
                     }
 
                 case PictureBoxSizeMode.CenterImage:
                     {
-                        // Image is centered in PictureBox at original size
+                        // Image centered, no scaling
                         int offsetX = (pictureBox.Width - img.Width) / 2;
                         int offsetY = (pictureBox.Height - img.Height) / 2;
-                        Rectangle imgRect = new Rectangle(
-                            selection.X - offsetX,
-                            selection.Y - offsetY,
-                            selection.Width,
-                            selection.Height
+
+                        int imgX = point.X - offsetX;
+                        int imgY = point.Y - offsetY;
+
+                        return new Point(
+                            Math.Max(0, Math.Min(img.Width - 1, imgX)),
+                            Math.Max(0, Math.Min(img.Height - 1, imgY))
                         );
-                        return Rectangle.Intersect(imgRect, new Rectangle(0, 0, img.Width, img.Height));
                     }
 
                 case PictureBoxSizeMode.Zoom:
                 default:
-                    return TranslateSelectionToImage_Zoom(pictureBox, selection, img);
+                    return TranslatePointToImage_Zoom(pictureBox, point, img);
             }
         }
 
-        private static Rectangle TranslateSelectionToImage_Zoom(PictureBox pictureBox, Rectangle selection, Image img)
+        private static Point TranslatePointToImage_Zoom(PictureBox pictureBox, Point point, Image img)
         {
             float imageAspect = (float)img.Width / img.Height;
             float boxAspect = (float)pictureBox.Width / pictureBox.Height;
@@ -116,20 +122,20 @@
                 offsetY = 0;
             }
 
-            // Selection relative to drawn image rectangle
             Rectangle imageRect = new Rectangle(offsetX, offsetY, drawWidth, drawHeight);
-            Rectangle intersect = Rectangle.Intersect(selection, imageRect);
-            if (intersect.IsEmpty) return Rectangle.Empty;
+            if (!imageRect.Contains(point))
+                return Point.Empty; // Point outside actual image area
 
             float scaleX = (float)img.Width / drawWidth;
             float scaleY = (float)img.Height / drawHeight;
 
-            int imgX = (int)((intersect.X - offsetX) * scaleX);
-            int imgY = (int)((intersect.Y - offsetY) * scaleY);
-            int imgW = (int)(intersect.Width * scaleX);
-            int imgH = (int)(intersect.Height * scaleY);
+            int imgX = (int)((point.X - offsetX) * scaleX);
+            int imgY = (int)((point.Y - offsetY) * scaleY);
 
-            return new Rectangle(imgX, imgY, imgW, imgH);
+            return new Point(
+                Math.Max(0, Math.Min(img.Width - 1, imgX)),
+                Math.Max(0, Math.Min(img.Height - 1, imgY))
+            );
         }
 
     }
