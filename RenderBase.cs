@@ -96,6 +96,10 @@
                 return;
             }
 
+            renderAreas = new();
+            renderAreas.Add((new Point(0, 0), new Point(buffer.Width, buffer.Height)));
+            return;
+
             int procCount = Environment.ProcessorCount;
 
             // Compute rows and cols for a near-square tiling
