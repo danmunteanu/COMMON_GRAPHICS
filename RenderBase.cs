@@ -96,9 +96,10 @@
                 return;
             }
 
-            renderAreas = new();
-            renderAreas.Add((new Point(0, 0), new Point(buffer.Width, buffer.Height)));
-            return;
+            //  Uncomment this to force single area rendering
+            //renderAreas = new();
+            //renderAreas.Add((new Point(0, 0), new Point(buffer.Width, buffer.Height)));
+            //return;
 
             int procCount = Environment.ProcessorCount;
 
